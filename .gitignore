@@ -140,5 +140,7 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
+.claude
 
 data/zim-library.db
+zim-files

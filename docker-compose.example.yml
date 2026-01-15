@@ -1,0 +1,9 @@
+services:
+  zim-library-manager:
+    image: ghcr.io/w3cj/zim-library-manager:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./zim-files:/app/zim-files
+    restart: unless-stopped
