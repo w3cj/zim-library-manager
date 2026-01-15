@@ -1,4 +1,5 @@
 import type { FC, PropsWithChildren } from "hono/jsx";
+import { css, Style } from "hono/css";
 
 type LayoutProps = PropsWithChildren<{
   title?: string;
@@ -18,7 +19,9 @@ export const Layout: FC<LayoutProps> = ({
         <title>{title}</title>
         <link rel="stylesheet" href="/styles/bootstrap.min.css" />
         <script src="/scripts/htmx.min.js"></script>
-        <style dangerouslySetInnerHTML={{ __html: `
+        <script defer src="/scripts/alpine-persist.min.js"></script>
+        <script defer src="/scripts/alpine.min.js"></script>
+        <Style>{css`
           .htmx-indicator {
             opacity: 0;
             transition: opacity 200ms ease-in;
@@ -27,7 +30,7 @@ export const Layout: FC<LayoutProps> = ({
           .htmx-request.htmx-indicator {
             opacity: 1;
           }
-        `}} />
+        `}</Style>
       </head>
       <body>
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary">

@@ -241,7 +241,8 @@ function TagFilter({ availableTags, selectedTags, query, language, category }: T
         <select
           class="form-select form-select-sm"
           style="width: auto; min-width: 150px;"
-          onchange={`window.location.href=this.value`}
+          x-data
+          x-on:change="if ($el.value) window.location.href = $el.value"
         >
           <option value="">+ Add tag...</option>
           {unselectedTags.map((tag) => (
@@ -358,14 +359,46 @@ app.get("/", async (c) => {
                       value={query}
                     />
                   </div>
-                  <div class="col-md-3">
+                  <div
+                    class="col-md-3"
+                    x-data={`{
+                      savedLang: $persist('').as('_x_zim-language'),
+                      init() {
+                        // Migrate from old localStorage format (plain string) to Alpine's JSON format
+                        const oldKey = 'zim-language';
+                        const oldValue = localStorage.getItem(oldKey);
+                        if (oldValue && !oldValue.startsWith('"')) {
+                          // Old format was plain string, migrate it
+                          this.savedLang = oldValue;
+                          localStorage.removeItem(oldKey);
+                        }
+
+                        // If we have a saved language and none in URL, apply it
+                        const urlLang = new URLSearchParams(window.location.search).get('lang');
+                        if (this.savedLang && !urlLang) {
+                          let p = new URLSearchParams(window.location.search);
+                          p.set('lang', this.savedLang);
+                          window.location.href = '/browse?' + p.toString();
+                        }
+                        // If language was explicitly cleared, clear storage
+                        if (urlLang === '') this.savedLang = '';
+                      }
+                    }`}
+                  >
                     <select
                       class="form-select"
                       name="lang"
                       id="language-select"
                       data-category={category}
                       data-query={query}
-                      onchange="localStorage.setItem('zim-language', this.value); var p = new URLSearchParams(); p.set('lang', this.value); if(this.dataset.category) p.set('category', this.dataset.category); if(this.dataset.query) p.set('q', this.dataset.query); window.location.href='/browse?' + p.toString()"
+                      x-on:change={`
+                        savedLang = $el.value;
+                        let p = new URLSearchParams();
+                        p.set('lang', $el.value);
+                        if ($el.dataset.category) p.set('category', $el.dataset.category);
+                        if ($el.dataset.query) p.set('q', $el.dataset.query);
+                        window.location.href = '/browse?' + p.toString();
+                      `}
                     >
                       <option value="">All Languages</option>
                       {languages.map((lang) => (
@@ -381,7 +414,14 @@ app.get("/", async (c) => {
                       name="category"
                       data-language={language}
                       data-query={query}
-                      onchange="var p = new URLSearchParams(); if(this.dataset.language) p.set('lang', this.dataset.language); p.set('category', this.value); if(this.dataset.query) p.set('q', this.dataset.query); window.location.href='/browse?' + p.toString()"
+                      x-data
+                      x-on:change={`
+                        let p = new URLSearchParams();
+                        if ($el.dataset.language) p.set('lang', $el.dataset.language);
+                        p.set('category', $el.value);
+                        if ($el.dataset.query) p.set('q', $el.dataset.query);
+                        window.location.href = '/browse?' + p.toString();
+                      `}
                     >
                       <option value="">All Categories</option>
                       {categories.map((cat) => (
@@ -428,27 +468,6 @@ app.get("/", async (c) => {
               kiwixServeUrl={kiwixServeUrl}
             />
           </div>
-
-          <script dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                var savedLang = localStorage.getItem('zim-language');
-                var urlParams = new URLSearchParams(window.location.search);
-                var currentLang = urlParams.get('lang') || '';
-
-                // If we have a saved language and it's not in the URL, apply it
-                if (savedLang && !currentLang && savedLang !== '') {
-                  urlParams.set('lang', savedLang);
-                  window.location.href = '/browse?' + urlParams.toString();
-                }
-
-                // If language was cleared (explicitly set to empty), clear localStorage
-                if (urlParams.has('lang') && urlParams.get('lang') === '') {
-                  localStorage.removeItem('zim-language');
-                }
-              })();
-            `
-          }} />
         </>
       )}
     </Layout>
