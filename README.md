@@ -9,6 +9,14 @@ A web application for managing Kiwix library ZIM file downloads.
 - **Local Library**: View downloaded ZIM files with update detection
 - **Disk Space Monitoring**: Check available disk space before downloads
 
+![browse](./screenshots/00-browse.png)
+
+![download](./screenshots/01-downloads.png)
+
+![library](./screenshots/02-library.png)
+
+![settings](./screenshots/03-settings.png)
+
 ## Quick Start
 
 ### Docker Compose (Recommended)
