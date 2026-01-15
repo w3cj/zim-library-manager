@@ -18,6 +18,16 @@ export const Layout: FC<LayoutProps> = ({
         <title>{title}</title>
         <link rel="stylesheet" href="/styles/bootstrap.min.css" />
         <script src="/scripts/htmx.min.js"></script>
+        <style dangerouslySetInnerHTML={{ __html: `
+          .htmx-indicator {
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+          }
+          .htmx-request .htmx-indicator,
+          .htmx-request.htmx-indicator {
+            opacity: 1;
+          }
+        `}} />
       </head>
       <body>
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary">

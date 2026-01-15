@@ -25,7 +25,7 @@ function ZimCard({
   const viewUrl = `${kiwixServeUrl}/${encodeURIComponent(zim.fileName.replace(".zim", ""))}`;
 
   // Use bookId as anchor for linking from browse page
-  const anchorId = zim.bookId || `zim-${zim.id}`;
+  const anchorId = zim.bookId ? `zim-${zim.bookId}` : `zim-${zim.id}`;
 
   return (
     <div class="card mb-3" id={anchorId}>

@@ -5,7 +5,7 @@ import { join, basename } from "path";
 import { getSetting } from "./settings.js";
 import { getDiskSpace, hasEnoughSpace } from "./disk.js";
 import { getBookById } from "./catalog.js";
-import { existsSync, statSync } from "fs";
+import { stat } from "fs/promises";
 import { XMLParser } from "fast-xml-parser";
 
 // Track active download processes
@@ -189,13 +189,16 @@ function spawnWget(
       lastUpdate = Date.now();
 
       // Check file size for progress
-      if (existsSync(outputPath)) {
-        const stats = statSync(outputPath);
-        db.update(downloads)
-          .set({ bytesDownloaded: stats.size })
-          .where(eq(downloads.id, downloadId))
-          .then(() => {});
-      }
+      stat(outputPath)
+        .then((stats) => {
+          db.update(downloads)
+            .set({ bytesDownloaded: stats.size })
+            .where(eq(downloads.id, downloadId))
+            .then(() => {});
+        })
+        .catch(() => {
+          // File doesn't exist yet, ignore
+        });
     }
   });
 
@@ -204,7 +207,7 @@ function spawnWget(
 
     if (code === 0) {
       // Download complete
-      const stats = existsSync(outputPath) ? statSync(outputPath) : null;
+      const stats = await stat(outputPath).catch(() => null);
       await db
         .update(downloads)
         .set({
@@ -348,8 +351,13 @@ export async function getDownloadProgress(
 
   // Update bytes from file if downloading
   let bytesDownloaded = d.bytesDownloaded ?? 0;
-  if (d.status === "downloading" && d.filePath && existsSync(d.filePath)) {
-    bytesDownloaded = statSync(d.filePath).size;
+  if (d.status === "downloading" && d.filePath) {
+    try {
+      const stats = await stat(d.filePath);
+      bytesDownloaded = stats.size;
+    } catch {
+      // File doesn't exist yet, use stored value
+    }
   }
 
   const totalBytes = d.totalBytes ?? 0;

@@ -178,7 +178,7 @@ app.get("/", async (c) => {
       <div
         id="download-list"
         hx-get="/downloads/list"
-        hx-trigger={activeCount > 0 ? "every 2s" : undefined}
+        hx-trigger={activeCount > 0 ? "every 1s" : undefined}
         hx-swap="innerHTML"
       >
         <DownloadList downloads={downloads} />

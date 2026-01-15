@@ -36,6 +36,7 @@ function BookCard({ book, isLast, nextPageUrl, libraryStatus, kiwixServeUrl }: B
         "hx-get": nextPageUrl,
         "hx-trigger": "revealed",
         "hx-swap": "afterend",
+        "hx-indicator": "#loading-spinner",
       }
     : {};
 
@@ -101,7 +102,7 @@ function BookCard({ book, isLast, nextPageUrl, libraryStatus, kiwixServeUrl }: B
               </button>
             ) : (
               <a
-                href={`/library#${book.id}`}
+                href={`/library#zim-${book.id}`}
                 class="btn btn-sm btn-primary w-100"
               >
                 Manage in Library
@@ -182,9 +183,9 @@ function BookList({ books, query, language, category, tags, offset = 0, hasMore 
         />
       ))}
       {hasMore && (
-        <div class="col-12 text-center py-3">
-          <div class="spinner-border spinner-border-sm text-primary htmx-indicator" role="status">
-            <span class="visually-hidden">Loading...</span>
+        <div class="col-12 text-center py-3 htmx-indicator" id="loading-spinner">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading more...</span>
           </div>
         </div>
       )}

@@ -10,7 +10,7 @@ export interface AppSettings {
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
-  downloadFolder: join(homedir(), "zim-files"),
+  downloadFolder: "/app/zim-files",
   kiwixServeUrl: "http://localhost:8080",
   catalogSyncInterval: "0 0 * * *", // Daily at midnight
 };

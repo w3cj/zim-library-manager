@@ -3,7 +3,7 @@ import { eq, like, sql } from "drizzle-orm";
 import { getSetting } from "./settings.js";
 import { getZimFiles, getFileInfo } from "./disk.js";
 import { join } from "path";
-import { unlinkSync } from "fs";
+import { unlink } from "fs/promises";
 
 /**
  * Parse a ZIM filename to extract the base name and date
@@ -33,7 +33,7 @@ function parseZimFilename(filename: string): {
  */
 export async function scanLibrary(): Promise<number> {
   const downloadFolder = await getSetting("downloadFolder");
-  const zimFiles = getZimFiles(downloadFolder);
+  const zimFiles = await getZimFiles(downloadFolder);
 
   console.log(`Found ${zimFiles.length} ZIM files in ${downloadFolder}`);
 
@@ -46,7 +46,7 @@ export async function scanLibrary(): Promise<number> {
     const filePath = join(downloadFolder, fileName);
     scannedPaths.add(filePath);
 
-    const fileInfo = getFileInfo(filePath);
+    const fileInfo = await getFileInfo(filePath);
     if (!fileInfo) continue;
 
     const { baseName, date: fileDate } = parseZimFilename(fileName);
@@ -188,7 +188,7 @@ export async function deleteLocalZim(id: number): Promise<void> {
 
   // Delete the actual file
   try {
-    unlinkSync(zim[0].filePath);
+    await unlink(zim[0].filePath);
   } catch (err) {
     console.error(`Failed to delete file: ${zim[0].filePath}`, err);
   }

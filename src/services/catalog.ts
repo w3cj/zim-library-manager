@@ -1,7 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
 import { db, catalogBooks, type NewCatalogBook } from "../db/index.js";
 import { eq, like, or, sql } from "drizzle-orm";
-import { readFileSync, existsSync } from "fs";
+import { access, readFile } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -140,10 +140,12 @@ export function parseCatalog(xml: string): NewCatalogBook[] {
 }
 
 export async function syncCatalogFromFile(filePath: string): Promise<number> {
-  if (!existsSync(filePath)) {
+  try {
+    await access(filePath);
+  } catch {
     throw new Error(`File not found: ${filePath}`);
   }
-  const xml = readFileSync(filePath, "utf-8");
+  const xml = await readFile(filePath, "utf-8");
   return syncCatalogFromXml(xml);
 }
 

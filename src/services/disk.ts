@@ -1,6 +1,6 @@
 import { exec } from "child_process";
 import { promisify } from "util";
-import { statSync, readdirSync, existsSync, mkdirSync } from "fs";
+import { stat, readdir, mkdir } from "fs/promises";
 import { join } from "path";
 
 const execAsync = promisify(exec);
@@ -13,10 +13,8 @@ export interface DiskSpace {
 }
 
 export async function getDiskSpace(path: string): Promise<DiskSpace> {
-  // Ensure directory exists
-  if (!existsSync(path)) {
-    mkdirSync(path, { recursive: true });
-  }
+  // Ensure directory exists (mkdir with recursive: true is a no-op if it exists)
+  await mkdir(path, { recursive: true });
 
   const { stdout } = await execAsync(`df -k "${path}"`);
   const lines = stdout.trim().split("\n");
@@ -32,7 +30,9 @@ export async function getDiskSpace(path: string): Promise<DiskSpace> {
 }
 
 export async function getFolderSize(path: string): Promise<number> {
-  if (!existsSync(path)) {
+  try {
+    await stat(path);
+  } catch {
     return 0;
   }
 
@@ -57,25 +57,24 @@ export function formatBytes(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
-export function getZimFiles(folderPath: string): string[] {
-  if (!existsSync(folderPath)) {
+export async function getZimFiles(folderPath: string): Promise<string[]> {
+  try {
+    const files = await readdir(folderPath);
+    return files.filter((file) => file.toLowerCase().endsWith(".zim"));
+  } catch {
     return [];
   }
-
-  return readdirSync(folderPath).filter((file) =>
-    file.toLowerCase().endsWith(".zim")
-  );
 }
 
-export function getFileInfo(filePath: string) {
-  if (!existsSync(filePath)) {
+export async function getFileInfo(filePath: string) {
+  try {
+    const stats = await stat(filePath);
+    return {
+      size: stats.size,
+      modified: stats.mtime,
+      created: stats.birthtime,
+    };
+  } catch {
     return null;
   }
-
-  const stats = statSync(filePath);
-  return {
-    size: stats.size,
-    modified: stats.mtime,
-    created: stats.birthtime,
-  };
 }
