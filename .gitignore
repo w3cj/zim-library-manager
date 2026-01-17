@@ -142,5 +142,7 @@ vite.config.ts.timestamp-*
 
 .claude
 
+.pnpm-store
+
 data/zim-library.db
 zim-files

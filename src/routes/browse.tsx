@@ -9,7 +9,11 @@ import {
   getAvailableTags,
   getBookById,
 } from "../services/catalog.js";
-import { startDownload } from "../services/downloader.js";
+import {
+  startDownload,
+  getDownloadByBookId,
+  getDownloadProgress,
+} from "../services/downloader.js";
 import { formatBytes, getDiskSpace } from "../services/disk.js";
 import { getSetting } from "../services/settings.js";
 import { getLibraryStatusMap, type LibraryStatus } from "../services/library.js";
@@ -90,44 +94,162 @@ function BookCard({ book, isLast, nextPageUrl, libraryStatus, kiwixServeUrl }: B
           </div>
         </div>
         <div class="card-footer bg-transparent">
-          {inLibrary ? (
-            hasUpdate ? (
-              <button
-                class="btn btn-sm btn-warning w-100"
-                hx-post={`/browse/download/${book.id}`}
-                hx-swap="outerHTML"
-                hx-confirm={`Update ${book.title} to latest version (${sizeFormatted})?`}
-              >
-                Update Available
-              </button>
+          <div id={`book-actions-${book.id}`}>
+            {inLibrary ? (
+              hasUpdate ? (
+                <button
+                  class="btn btn-sm btn-warning w-100"
+                  hx-post={`/browse/download/${book.id}`}
+                  hx-target={`#book-actions-${book.id}`}
+                  hx-swap="innerHTML"
+                  hx-confirm={`Update ${book.title} to latest version (${sizeFormatted})?`}
+                >
+                  Update Available
+                </button>
+              ) : (
+                <a
+                  href={`/library#zim-${book.id}`}
+                  class="btn btn-sm btn-primary w-100"
+                >
+                  Manage in Library
+                </a>
+              )
             ) : (
-              <a
-                href={`/library#zim-${book.id}`}
-                class="btn btn-sm btn-primary w-100"
-              >
-                Manage in Library
-              </a>
-            )
-          ) : (
-            <div class="d-flex gap-2">
-              <a
-                href={`https://library.kiwix.org/viewer#${book.name}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="btn btn-sm btn-outline-primary flex-grow-1"
-              >
-                View
-              </a>
-              <button
-                class="btn btn-sm btn-success flex-grow-1"
-                hx-post={`/browse/download/${book.id}`}
-                hx-swap="outerHTML"
-                hx-confirm={`Download ${book.title} (${sizeFormatted})?`}
-              >
-                Download
-              </button>
-            </div>
-          )}
+              <div class="d-flex gap-2">
+                <a
+                  href={`https://library.kiwix.org/viewer#${book.name}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn btn-sm btn-outline-primary flex-grow-1"
+                >
+                  View
+                </a>
+                <button
+                  class="btn btn-sm btn-success flex-grow-1"
+                  hx-post={`/browse/download/${book.id}`}
+                  hx-target={`#book-actions-${book.id}`}
+                  hx-swap="innerHTML"
+                  hx-confirm={`Download ${book.title} (${sizeFormatted})?`}
+                >
+                  Download
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface DownloadStatusButtonProps {
+  bookId: string;
+}
+
+async function DownloadStatusButton({ bookId }: DownloadStatusButtonProps) {
+  const download = await getDownloadByBookId(bookId);
+
+  // No download found - show fresh download button
+  if (!download) {
+    return (
+      <button
+        class="btn btn-sm btn-success w-100"
+        hx-post={`/browse/download/${bookId}`}
+        hx-target={`#book-actions-${bookId}`}
+        hx-swap="innerHTML"
+      >
+        Download
+      </button>
+    );
+  }
+
+  const progress = await getDownloadProgress(download.id);
+  const percentage = progress?.percentage ?? 0;
+
+  // Completed - show "Manage in Library" link
+  if (download.status === "completed") {
+    return (
+      <a
+        href={`/library#zim-${bookId}`}
+        class="btn btn-sm btn-primary w-100"
+      >
+        Manage in Library
+      </a>
+    );
+  }
+
+  // Failed - show retry button with error
+  if (download.status === "failed") {
+    return (
+      <div>
+        <button
+          class="btn btn-sm btn-danger w-100 mb-1"
+          hx-post={`/browse/download/${bookId}`}
+          hx-target={`#book-actions-${bookId}`}
+          hx-swap="innerHTML"
+        >
+          Retry Download
+        </button>
+        {download.error && (
+          <small class="text-danger">{download.error}</small>
+        )}
+      </div>
+    );
+  }
+
+  // Paused - show paused status with link to downloads
+  if (download.status === "paused") {
+    return (
+      <div
+        hx-get={`/browse/download/${bookId}/status`}
+        hx-trigger="every 1s"
+        hx-target={`#book-actions-${bookId}`}
+        hx-swap="innerHTML"
+      >
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <small class="text-warning">Paused</small>
+          <a href="/downloads" class="small">Manage</a>
+        </div>
+        <div class="progress" style="height: 20px;">
+          <div
+            class="progress-bar bg-warning"
+            style={`width: ${percentage}%`}
+          >
+            {percentage.toFixed(0)}%
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Queued - show waiting status
+  if (download.status === "queued") {
+    return (
+      <div
+        hx-get={`/browse/download/${bookId}/status`}
+        hx-trigger="every 1s"
+        hx-target={`#book-actions-${bookId}`}
+        hx-swap="innerHTML"
+      >
+        <small class="text-muted">Queued...</small>
+      </div>
+    );
+  }
+
+  // Downloading - show progress bar with polling
+  return (
+    <div
+      hx-get={`/browse/download/${bookId}/status`}
+      hx-trigger="every 1s"
+      hx-target={`#book-actions-${bookId}`}
+      hx-swap="innerHTML"
+    >
+      <div class="progress" style="height: 20px;">
+        <div
+          class="progress-bar progress-bar-striped progress-bar-animated"
+          style={`width: ${percentage}%`}
+        >
+          {percentage.toFixed(0)}%
         </div>
       </div>
     </div>
@@ -518,12 +640,8 @@ app.post("/download/:id", async (c) => {
   const bookId = c.req.param("id");
 
   try {
-    const download = await startDownload(bookId);
-    return c.html(
-      <button class="btn btn-sm btn-secondary w-100" disabled>
-        Downloading... <a href="/downloads">View</a>
-      </button>
-    );
+    await startDownload(bookId);
+    return c.html(<DownloadStatusButton bookId={bookId} />);
   } catch (err) {
     return c.html(
       <div>
@@ -538,6 +656,11 @@ app.post("/download/:id", async (c) => {
       </div>
     );
   }
+});
+
+app.get("/download/:id/status", async (c) => {
+  const bookId = c.req.param("id");
+  return c.html(<DownloadStatusButton bookId={bookId} />);
 });
 
 export default app;

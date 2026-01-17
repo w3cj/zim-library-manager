@@ -391,3 +391,12 @@ export async function deleteDownload(downloadId: number): Promise<void> {
   await cancelDownload(downloadId);
   await db.delete(downloads).where(eq(downloads.id, downloadId));
 }
+
+export async function getDownloadByBookId(bookId: string): Promise<Download | null> {
+  const result = await db
+    .select()
+    .from(downloads)
+    .where(eq(downloads.bookId, bookId))
+    .limit(1);
+  return result[0] ?? null;
+}

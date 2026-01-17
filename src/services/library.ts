@@ -209,6 +209,17 @@ export async function getUpdateCount(): Promise<number> {
   return result[0]?.count ?? 0;
 }
 
+/**
+ * Get total size of all ZIM files in the library (from database)
+ */
+export async function getLibraryTotalSize(): Promise<number> {
+  const result = await db
+    .select({ total: sql<number>`COALESCE(SUM(${localZims.fileSize}), 0)` })
+    .from(localZims);
+
+  return result[0]?.total ?? 0;
+}
+
 export interface LibraryStatus {
   inLibrary: boolean;
   hasUpdate: boolean;

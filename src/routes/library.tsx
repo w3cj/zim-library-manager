@@ -5,9 +5,10 @@ import {
   scanLibrary,
   deleteLocalZim,
   getUpdateCount,
+  getLibraryTotalSize,
 } from "../services/library.js";
 import { startDownload } from "../services/downloader.js";
-import { formatBytes, getDiskSpace, getFolderSize } from "../services/disk.js";
+import { formatBytes, getDiskSpace } from "../services/disk.js";
 import { getSetting } from "../services/settings.js";
 import type { LocalZim, CatalogBook } from "../db/index.js";
 
@@ -138,17 +139,13 @@ app.get("/", async (c) => {
   const downloadFolder = await getSetting("downloadFolder");
   const kiwixServeUrl = await getSetting("kiwixServeUrl");
 
-  // Scan library on page load
-  await scanLibrary();
-
   const zims = (await getLocalLibrary()) as LocalZimWithCatalog[];
   const updateCount = await getUpdateCount();
+  const folderSize = await getLibraryTotalSize();
 
   let diskInfo = null;
-  let folderSize = 0;
   try {
     diskInfo = await getDiskSpace(downloadFolder);
-    folderSize = await getFolderSize(downloadFolder);
   } catch (err) {
     // Ignore
   }

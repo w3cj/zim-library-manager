@@ -1,0 +1,22 @@
+{
+    "name": "zim-library-manager",
+    "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "installOhMyZsh": true,
+            "configureZshAsDefaultShell": true
+        },
+        "ghcr.io/w3cj/devcontainer-features/firewall:latest": {
+            "hosts": "models.dev,library.kiwix.org,download.kiwix.org",
+            "verbose": true,
+            "githubIps": true,
+            "githubDomains": true,
+            "npmRegistry": true,
+            "vscodeMarketplace": true,
+            "claudeCode": true
+        },
+        "ghcr.io/stu-bell/devcontainer-features/open-code": {}
+    },
+    "remoteUser": "node",
+    "mounts": ["source=${localEnv:HOME}/.local/share/opencode,target=/home/node/.local/share/opencode,type=bind,type=bind,consistency=delegated"]
+}
